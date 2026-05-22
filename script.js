@@ -1,44 +1,46 @@
-const form = document.getElementById("book-form");
-const titleInput = document.getElementById("title");
-const authorInput = document.getElementById("author");
-const isbnInput = document.getElementById("isbn");
-const bookList = document.getElementById("book-list");
+const msg = new SpeechSynthesisUtterance();
+let voices = [];
+const voicesDropdown = document.querySelector('[name="voice"]');
+const options = document.querySelectorAll('[type="range"], [name="text"]');
+const speakButton = document.querySelector('#speak');
+const stopButton = document.querySelector('#stop');
 
-// Listen for form submission, not just a click
-form.addEventListener("submit", (e) => {
-  e.preventDefault();
+// Set the default text on load
+msg.text = document.querySelector('[name="text"]').value;
 
-  const title = titleInput.value.trim();
-  const author = authorInput.value.trim();
-  const isbn = isbnInput.value.trim();
+// Fetch and populate the voices dropdown
+function populateVoices() {
+  voices = this.getVoices();
+  
+  voicesDropdown.innerHTML = voices
+    .map(voice => `<option value="${voice.name}">${voice.name} (${voice.lang})</option>`)
+    .join('');
+}
 
-  // Basic validation (though HTML 'required' handles most of this)
-  if(title === "" || author === "" || isbn === ""){
-    return;
+// Set the selected voice
+function setVoice() {
+  msg.voice = voices.find(voice => voice.name === this.value);
+  toggle(); 
+}
+
+// Play and Stop functionality
+function toggle(startOver = true) {
+  speechSynthesis.cancel();
+  
+  if (startOver && msg.text.trim() !== '') {
+    speechSynthesis.speak(msg);
   }
+}
 
-  // Create a new row
-  const row = document.createElement("tr");
-  row.innerHTML = `
-    <td>${title}</td>
-    <td>${author}</td>
-    <td>${isbn}</td>
-    <td><button class="delete">X</button></td>
-  `;
+// Handle changes to Rate, Pitch, and Text input
+function setOption() {
+  msg[this.name] = this.value;
+  toggle(); 
+}
 
-  // Append row to the table body
-  bookList.appendChild(row);
-
-  // Clear inputs after submission
-  titleInput.value = "";
-  authorInput.value = "";
-  isbnInput.value = "";
-});
-
-// Event delegation for the delete button
-bookList.addEventListener("click", (e) => {
-  if(e.target.classList.contains("delete")) {
-    // closest('tr') ensures the whole row is removed, not just the button's parent td
-    e.target.closest('tr').remove(); 
-  }
-});
+// --- Event Listeners ---
+speechSynthesis.addEventListener('voiceschanged', populateVoices);
+voicesDropdown.addEventListener('change', setVoice);
+options.forEach(option => option.addEventListener('change', setOption));
+speakButton.addEventListener('click', toggle);
+stopButton.addEventListener('click', () => toggle(false));
